@@ -20,15 +20,18 @@ import java.io.File
 
 import scala.collection.JavaConverters._
 
-import org.apache.spark.{Logging, SparkConf, SparkContext}
+import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.scheduler.StatsReportListener
 import org.apache.spark.sql.CarbonContext
 import org.apache.spark.sql.hive.HiveContext
 import org.apache.spark.sql.hive.thriftserver.{SparkSQLCLIDriver, SparkSQLEnv}
 import org.apache.spark.util.Utils
 
-object CarbonSQLCLIDriver extends Logging {
+import org.apache.carbondata.common.logging.LogServiceFactory
 
+object CarbonSQLCLIDriver {
+
+  private val LOGGER = LogServiceFactory.getLogService(this.getClass.getCanonicalName)
   var hiveContext: HiveContext = _
   var sparkContext: SparkContext = _
 
@@ -63,19 +66,16 @@ object CarbonSQLCLIDriver extends Logging {
 
       sparkContext = new SparkContext(sparkConf)
       sparkContext.addSparkListener(new StatsReportListener())
-      val store = new File("./carbonsqlclistore")
+      val path = System.getenv("CARBON_HOME") + "/bin/carbonsqlclistore"
+      val store = new File(path)
       store.mkdirs()
       hiveContext = new CarbonContext(sparkContext,
         maybeStorePath.getOrElse(store.getCanonicalPath),
         store.getCanonicalPath)
-      hiveContext.setConf("carbon.kettle.home", "../processing/carbonplugins")
 
       hiveContext.setConf("spark.sql.hive.version", HiveContext.hiveExecutionVersion)
-
-      if (log.isDebugEnabled) {
-        hiveContext.hiveconf.getAllProperties.asScala.toSeq.sorted.foreach { case (k, v) =>
-          logDebug(s"HiveConf var: $k=$v")
-        }
+      hiveContext.hiveconf.getAllProperties.asScala.toSeq.sorted.foreach { case (k, v) =>
+        LOGGER.debug(s"HiveConf var: $k=$v")
       }
     }
   }

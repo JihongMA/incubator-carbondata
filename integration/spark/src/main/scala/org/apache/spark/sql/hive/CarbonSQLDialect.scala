@@ -21,7 +21,7 @@ import org.apache.spark.sql.CarbonSqlParser
 import org.apache.spark.sql.catalyst.ParserDialect
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 
-import org.carbondata.spark.exception.MalformedCarbonCommandException
+import org.apache.carbondata.spark.exception.MalformedCarbonCommandException
 
 private[spark] class CarbonSQLDialect(hiveContext: HiveContext) extends ParserDialect {
 
@@ -37,7 +37,7 @@ private[spark] class CarbonSQLDialect(hiveContext: HiveContext) extends ParserDi
       // because hive can no parse carbon command
       case ce: MalformedCarbonCommandException =>
         throw ce
-      case _ =>
+      case _: Throwable =>
         HiveQl.parseSql(sqlText)
     }
   }
