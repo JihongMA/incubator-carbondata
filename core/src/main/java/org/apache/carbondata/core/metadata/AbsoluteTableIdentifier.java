@@ -38,6 +38,9 @@ public class AbsoluteTableIdentifier implements Serializable {
    */
   private String storePath;
 
+
+  private boolean isLocalPath;
+
   /**
    * carbon table identifier which will have table name and table database
    * name
@@ -47,6 +50,7 @@ public class AbsoluteTableIdentifier implements Serializable {
   public AbsoluteTableIdentifier(String storePath, CarbonTableIdentifier carbonTableIdentifier) {
     //TODO this should be moved to common place where path handling will be handled
     this.storePath = FileFactory.getUpdatedFilePath(storePath);
+    isLocalPath = storePath.startsWith(CarbonCommonConstants.LOCAL_FILE_PREFIX);
     this.carbonTableIdentifier = carbonTableIdentifier;
   }
 
@@ -69,6 +73,14 @@ public class AbsoluteTableIdentifier implements Serializable {
     return new AbsoluteTableIdentifier(CarbonUtil.getCarbonStorePath(), identifier);
   }
 
+  /**
+   * By using the tablePath this method will prepare a AbsoluteTableIdentifier with
+   * dummy tableId(Long.toString(System.currentTimeMillis()).
+   * This instance could not be used to uniquely identify the table, this is just
+   * to get the database name, table name and store path to load the schema.
+   * @param tablePath
+   * @return returns AbsoluteTableIdentifier with dummy tableId
+   */
   public static AbsoluteTableIdentifier fromTablePath(String tablePath) {
     String formattedTablePath = tablePath.replace('\\', '/');
     String[] names = formattedTablePath.split("/");
@@ -89,6 +101,14 @@ public class AbsoluteTableIdentifier implements Serializable {
   public String getTablePath() {
     return getStorePath() + File.separator + getCarbonTableIdentifier().getDatabaseName() +
         File.separator + getCarbonTableIdentifier().getTableName();
+  }
+
+  public String appendWithLocalPrefix(String path) {
+    if (isLocalPath) {
+      return CarbonCommonConstants.LOCAL_FILE_PREFIX + path;
+    } else {
+      return path;
+    }
   }
 
   /**

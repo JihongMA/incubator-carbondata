@@ -380,6 +380,15 @@ public final class CarbonCommonConstants {
    * CARBON_TIMESTAMP_DEFAULT_FORMAT
    */
   public static final String CARBON_TIMESTAMP_FORMAT = "carbon.timestamp.format";
+
+  /**
+   * CARBON_DATE_DEFAULT_FORMAT
+   */
+  public static final String CARBON_DATE_DEFAULT_FORMAT = "yyyy-MM-dd";
+  /**
+   * CARBON_DATE_DEFAULT_FORMAT
+   */
+  public static final String CARBON_DATE_FORMAT = "carbon.date.format";
   /**
    * STORE_LOCATION_HDFS
    */
@@ -622,7 +631,7 @@ public final class CarbonCommonConstants {
   /**
    * BIG_INT_MEASURE
    */
-  public static final char BIG_INT_MEASURE = 'l';
+  public static final char BIG_INT_MEASURE = 'd';
 
   /**
    * This determines the size of array to be processed in data load steps. one
@@ -1126,6 +1135,12 @@ public final class CarbonCommonConstants {
   public static final String MINOR = "minor";
 
   public static final String MAJOR = "major";
+
+  public static final String LOCAL_FILE_PREFIX = "file://";
+
+  public static final String USE_KETTLE = "use_kettle";
+
+  public static final String USE_KETTLE_DEFAULT = "false";
 
   private CarbonCommonConstants() {
   }

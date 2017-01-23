@@ -92,7 +92,10 @@ object CarbonScalaUtil {
   }
 
   def getKettleHome(sqlContext: SQLContext): String = {
-    var kettleHomePath = CarbonProperties.getInstance.getProperty("carbon.kettle.home")
+    var kettleHomePath = sqlContext.getConf("carbon.kettle.home", null)
+    if (null == kettleHomePath) {
+      kettleHomePath = CarbonProperties.getInstance.getProperty("carbon.kettle.home")
+    }
     if (null == kettleHomePath) {
       val carbonHome = System.getenv("CARBON_HOME")
       if (null != carbonHome) {
@@ -144,7 +147,8 @@ object CarbonScalaUtil {
       serializationNullFormat: String,
       delimiterLevel1: String,
       delimiterLevel2: String,
-      format: SimpleDateFormat,
+      timeStampFormat: SimpleDateFormat,
+      dateFormat: SimpleDateFormat,
       level: Int = 1): String = {
     if (value == null) {
       serializationNullFormat
@@ -154,8 +158,8 @@ object CarbonScalaUtil {
         case d: java.math.BigDecimal => d.toPlainString
         case i: java.lang.Integer => i.toString
         case d: java.lang.Double => d.toString
-        case t: java.sql.Timestamp => format format t
-        case d: java.sql.Date => format format d
+        case t: java.sql.Timestamp => timeStampFormat format t
+        case d: java.sql.Date => dateFormat format d
         case b: java.lang.Boolean => b.toString
         case s: java.lang.Short => s.toString
         case f: java.lang.Float => f.toString
@@ -169,7 +173,7 @@ object CarbonScalaUtil {
           val builder = new StringBuilder()
           s.foreach { x =>
             builder.append(getString(x, serializationNullFormat, delimiterLevel1,
-                delimiterLevel2, format, level + 1)).append(delimiter)
+                delimiterLevel2, timeStampFormat, dateFormat, level + 1)).append(delimiter)
           }
           builder.substring(0, builder.length - 1)
         case m: scala.collection.Map[Any, Any] =>
@@ -183,7 +187,7 @@ object CarbonScalaUtil {
           val builder = new StringBuilder()
           for (i <- 0 until r.length) {
             builder.append(getString(r(i), serializationNullFormat, delimiterLevel1,
-                delimiterLevel2, format, level + 1)).append(delimiter)
+                delimiterLevel2, timeStampFormat, dateFormat, level + 1)).append(delimiter)
           }
           builder.substring(0, builder.length - 1)
         case other => other.toString

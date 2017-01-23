@@ -390,11 +390,19 @@ case class LoadTable(
       val useKettle = options.get("use_kettle") match {
         case Some(value) => value.toBoolean
         case _ =>
-          val useKettleLocal = System.getProperty("use.kettle")
+          var useKettleLocal = System.getProperty("use_kettle")
+          if (useKettleLocal == null && sqlContext.sparkContext.getConf.contains("use_kettle")) {
+            useKettleLocal = sqlContext.sparkContext.getConf.get("use_kettle")
+          }
           if (useKettleLocal == null) {
-            sqlContext.sparkContext.getConf.get("use_kettle_default", "true").toBoolean
-          } else {
+            useKettleLocal = CarbonProperties.getInstance().
+              getProperty(CarbonCommonConstants.USE_KETTLE,
+                CarbonCommonConstants.USE_KETTLE_DEFAULT)
+          }
+          try {
             useKettleLocal.toBoolean
+          } catch {
+            case e: Exception => CarbonCommonConstants.USE_KETTLE_DEFAULT.toBoolean
           }
       }
 
@@ -424,6 +432,9 @@ case class LoadTable(
       carbonLoadModel.setDefaultTimestampFormat(CarbonProperties.getInstance().getProperty(
         CarbonCommonConstants.CARBON_TIMESTAMP_FORMAT,
         CarbonCommonConstants.CARBON_TIMESTAMP_DEFAULT_FORMAT))
+      carbonLoadModel.setDefaultDateFormat(CarbonProperties.getInstance().getProperty(
+        CarbonCommonConstants.CARBON_DATE_FORMAT,
+        CarbonCommonConstants.CARBON_DATE_DEFAULT_FORMAT))
       carbonLoadModel
         .setSerializationNullFormat(
           TableOptionConstant.SERIALIZATION_NULL_FORMAT.getName + "," + serializationNullFormat)

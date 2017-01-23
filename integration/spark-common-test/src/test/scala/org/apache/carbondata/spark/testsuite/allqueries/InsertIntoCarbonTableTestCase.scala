@@ -113,16 +113,73 @@ class InsertIntoCarbonTableTestCase extends QueryTest with BeforeAndAfterAll {
          sql("select imei,deviceInformationId,MAC from TCarbonLocal")
      )
   }
-//  test("insert->insert empty data -pass") {
-//     sql("drop table if exists TCarbon")
-//     sql("create table TCarbon (imei string,deviceInformationId int,MAC string) STORED BY 'org.apache.carbondata.format'")
-//     sql("insert into TCarbon select imei,deviceInformationId,MAC from THive where MAC='wrongdata'")
-//     val result = sql("select imei,deviceInformationId,MAC from TCarbon where MAC='wrongdata'").collect()
-//     checkAnswer(
-//         sql("select imei,deviceInformationId,MAC from THive where MAC='wrongdata'"),
-//         sql("select imei,deviceInformationId,MAC from TCarbon where MAC='wrongdata'")
-//     )
-//  }
+
+  test("insert->insert with functions") {
+    sql("DROP TABLE IF EXISTS carbon_table")
+    sql("DROP TABLE IF EXISTS carbon_table1")
+    // Create table
+    sql(
+      s"""
+         | CREATE TABLE carbon_table(
+         |    shortField smallint,
+         |    intField int,
+         |    bigintField bigint,
+         |    doubleField double,
+         |    stringField string,
+         |    timestampField timestamp,
+         |    decimalField decimal(18,2),
+         |    dateField date,
+         |    charField string,
+         |    floatField float
+         | )
+         | STORED BY 'carbondata'
+         | TBLPROPERTIES('DICTIONARY_INCLUDE'='dateField, charField')
+       """.stripMargin)
+
+    sql(
+      s"""
+         | CREATE TABLE carbon_table1(
+         |    shortField smallint,
+         |    intField int,
+         |    bigintField bigint,
+         |    doubleField double,
+         |    stringField string,
+         |    timestampField timestamp,
+         |    decimalField decimal(18,2),
+         |    dateField date,
+         |    charField string,
+         |    floatField float
+         | )
+         | STORED BY 'carbondata'
+         | TBLPROPERTIES('DICTIONARY_INCLUDE'='dateField, charField')
+       """.stripMargin)
+    sql(
+      s"""
+         | LOAD DATA LOCAL INPATH '${resourcesPath + "/data_with_all_types.csv"}'
+         | INTO TABLE carbon_table
+         | options('FILEHEADER'='shortField,intField,bigintField,doubleField,stringField,timestampField,decimalField,dateField,charField,floatField')
+       """.stripMargin)
+
+    sql("""insert into table carbon_table1 select shortField,intField,bigintField,doubleField,ASCII(stringField),
+                timestampField,decimalField,dateField,charField,floatField from carbon_table
+              """).show
+  }
+
+  test("insert->insert with different names and aliases") {
+    sql("DROP TABLE IF EXISTS uniqdata")
+    sql("DROP TABLE IF EXISTS student")
+
+    // Create table
+    sql(
+      s"""
+         CREATE TABLE uniqdata (CUST_ID int,CUST_NAME String,ACTIVE_EMUI_VERSION string, DOB timestamp, DOJ timestamp, BIGINT_COLUMN1 bigint,BIGINT_COLUMN2 bigint,DECIMAL_COLUMN1 decimal(30,10), DECIMAL_COLUMN2 decimal(36,10),Double_COLUMN1 double, Double_COLUMN2 double,INTEGER_COLUMN1 int) STORED BY 'org.apache.carbondata.format' TBLPROPERTIES ("TABLE_BLOCKSIZE"= "256 MB")
+       """.stripMargin)
+    sql(s"""CREATE TABLE student (CUST_ID2 int,CUST_ADDR String,ACTIVE_EMUI_VERSION string, DOB timestamp, DOJ timestamp, BIGINT_COLUMN1 bigint,BIGINT_COLUMN2 bigint,DECIMAL_COLUMN1 decimal(30,10), DECIMAL_COLUMN2 decimal(36,10),Double_COLUMN1 double, Double_COLUMN2 double,INTEGER_COLUMN1 int) STORED BY 'org.apache.carbondata.format' TBLPROPERTIES ("TABLE_BLOCKSIZE"= "256 MB")""")
+
+    sql(s"""LOAD DATA inpath '${resourcesPath + "/data_with_all_types.csv"}' INTO table uniqdata options('DELIMITER'=',', 'FILEHEADER'='CUST_ID, CUST_NAME, ACTIVE_EMUI_VERSION, DOB, DOJ, BIGINT_COLUMN1, BIGINT_COLUMN2, DECIMAL_COLUMN1, DECIMAL_COLUMN2, Double_COLUMN1, Double_COLUMN2, INTEGER_COLUMN1')""")
+    sql("""insert into student select * from uniqdata""")
+  }
+
   test("insert into existing load-pass") {
     val timeStampPropOrig = CarbonProperties.getInstance().getProperty(CarbonCommonConstants.CARBON_TIMESTAMP_FORMAT)
      CarbonProperties.getInstance()

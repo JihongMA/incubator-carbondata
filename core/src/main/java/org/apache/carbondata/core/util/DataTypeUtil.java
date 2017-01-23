@@ -45,12 +45,21 @@ public final class DataTypeUtil {
       LogServiceFactory.getLogService(DataTypeUtil.class.getName());
   private static final Map<String, String> dataTypeDisplayNames;
 
-  private static final ThreadLocal<DateFormat> formatter = new ThreadLocal<DateFormat>() {
+  private static final ThreadLocal<DateFormat> timeStampformatter = new ThreadLocal<DateFormat>() {
     @Override
     protected DateFormat initialValue() {
       return new SimpleDateFormat(
           CarbonProperties.getInstance().getProperty(CarbonCommonConstants.CARBON_TIMESTAMP_FORMAT,
               CarbonCommonConstants.CARBON_TIMESTAMP_DEFAULT_FORMAT));
+    }
+  };
+
+  private static final ThreadLocal<DateFormat> dateformatter = new ThreadLocal<DateFormat>() {
+    @Override
+    protected DateFormat initialValue() {
+      return new SimpleDateFormat(
+          CarbonProperties.getInstance().getProperty(CarbonCommonConstants.CARBON_DATE_FORMAT,
+              CarbonCommonConstants.CARBON_DATE_DEFAULT_FORMAT));
     }
   };
 
@@ -176,6 +185,19 @@ public final class DataTypeUtil {
   }
 
   /**
+   * This method will convert a byte value back to big decimal value
+   *
+   * @param raw
+   * @return
+   */
+  public static BigDecimal byteToBigDecimal(byte[] raw, int offset, int length) {
+    int scale = (raw[offset] & 0xFF);
+    byte[] unscale = new byte[length - 1];
+    System.arraycopy(raw, offset+1, unscale, 0, unscale.length);
+    BigInteger sig = new BigInteger(unscale);
+    return new BigDecimal(sig, scale);
+  }
+  /**
    * returns the SqlStatement.Type of corresponding string value
    *
    * @param dataTypeStr
@@ -256,12 +278,23 @@ public final class DataTypeUtil {
           }
           return Long.parseLong(data);
         case DATE:
+          if (data.isEmpty()) {
+            return null;
+          }
+          try {
+            Date dateToStr = dateformatter.get().parse(data);
+            return dateToStr.getTime() * 1000;
+          } catch (ParseException e) {
+            LOGGER.error("Cannot convert" + data + " to Time/Long type value" + e.getMessage());
+            return null;
+          }
+
         case TIMESTAMP:
           if (data.isEmpty()) {
             return null;
           }
           try {
-            Date dateToStr = formatter.get().parse(data);
+            Date dateToStr = timeStampformatter.get().parse(data);
             return dateToStr.getTime() * 1000;
           } catch (ParseException e) {
             LOGGER.error("Cannot convert" + data + " to Time/Long type value" + e.getMessage());
